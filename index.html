@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo da Memória</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-gap: 10px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+
+    .card {
+      width: 100px;
+      height: 100px;
+      background: #3498db;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .card img {
+      width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+    }
+
+    .card.flipped img {
+      display: block;
+    }
+
+    #mensagem {
+      margin-top: 15px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #barra-progresso {
+      width: 80%;
+      height: 20px;
+      margin: 10px auto;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #progresso {
+      height: 100%;
+      width: 100%;
+      background: #2ecc71;
+      transition: width 1s linear;
+    }
+
+    #reiniciar {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #reiniciar:hover {
+      background: #c0392b;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Jogo da Memória</h1>
+
+  <div id="barra-progresso">
+    <div id="progresso"></div>
+  </div>
+
+  <p id="mensagem">Tempo restante: 30s</p>
+
+  <div id="game-board"></div>
+
+  <button id="reiniciar">🔄 Reiniciar</button>
+
+  <script>
+    const imagens = [
+  "https://raw.githubusercontent.com/maelmedeiros/jogomemoriav4/main/afinox.png",
+  "https://raw.githubusercontent.com/maelmedeiros/jogomemoriav4/main/airoven.png",
+  "https://raw.githubusercontent.com/maelmedeiros/jogomemoriav4/main/lca14.png",
+  "https://raw.githubusercontent.com/maelmedeiros/jogomemoriav4/main/lcs10kgtopo.png",
+  "https://raw.githubusercontent.com/maelmedeiros/jogomemoriav4/main/lcs20kg.png",
+  "https://raw.githubusercontent.com/maelmedeiros/jogomemoriav4/main/arcond.png",
+  "https://raw.githubusercontent.com/maelmedeiros/jogomemoriav4/main/bebprem.png",
+  "https://raw.githubusercontent.com/maelmedeiros/jogomemoriav4/main/purprem.png"
+];
+
+    let cartaVirada = null;
+    let bloqueio = false;
+    let paresEncontrados = 0;
+
+    let tempoInicial = 30;
+    let tempoRestante = tempoInicial;
+    let cronometro;
+
+    const tabuleiro = document.getElementById("game-board");
+    const mensagem = document.getElementById("mensagem");
+    const progresso = document.getElementById("progresso");
+    const reiniciarBtn = document.getElementById("reiniciar");
+
+    function iniciarJogo() {
+
+      clearInterval(cronometro);
+
+      tabuleiro.innerHTML = "";
+      cartaVirada = null;
+      bloqueio = false;
+      paresEncontrados = 0;
+
+      tempoRestante = tempoInicial;
+
+      atualizarTempo();
+
+      let cartas = [...imagens, ...imagens];
+      cartas.sort(() => 0.5 - Math.random());
+
+      cartas.forEach(src => {
+        const card = document.createElement("div");
+        card.classList.add("card");
+
+        const img = document.createElement("img");
+        img.src = src;
+
+        card.appendChild(img);
+
+        card.addEventListener("click", () => virarCarta(card, src));
+
+        tabuleiro.appendChild(card);
+      });
+
+      iniciarCronometro();
+    }
+
+    function iniciarCronometro() {
+
+      cronometro = setInterval(() => {
+
+        tempoRestante--;
+
+        atualizarTempo();
+
+        if (tempoRestante <= 0) {
+
+          clearInterval(cronometro);
+
+          mensagem.textContent = "⏰ Tempo esgotado!";
+
+          bloqueio = true;
+        }
+
+      }, 1000);
+    }
+
+    function atualizarTempo() {
+
+      mensagem.textContent = `Tempo restante: ${tempoRestante}s`;
+
+      let porcentagem = (tempoRestante / tempoInicial) * 100;
+
+      progresso.style.width = `${porcentagem}%`;
+    }
+
+    function virarCarta(card, src) {
+
+      if (
+        bloqueio ||
+        card.classList.contains("flipped") ||
+        tempoRestante <= 0
+      ) return;
+
+      card.classList.add("flipped");
+
+      if (!cartaVirada) {
+
+        cartaVirada = { card, src };
+
+      } else {
+
+        if (cartaVirada.src === src) {
+
+          paresEncontrados++;
+
+          cartaVirada = null;
+
+          if (paresEncontrados === imagens.length) {
+
+            clearInterval(cronometro);
+
+            mensagem.textContent = "🎉 Parabéns! Você venceu!";
+
+            bloqueio = true;
+          }
+
+        } else {
+
+          bloqueio = true;
+
+          setTimeout(() => {
+
+            card.classList.remove("flipped");
+            cartaVirada.card.classList.remove("flipped");
+
+            cartaVirada = null;
+            bloqueio = false;
+
+          }, 1000);
+        }
+      }
+    }
+
+    reiniciarBtn.addEventListener("click", iniciarJogo);
+
+    iniciarJogo();
+  </script>
+
+</body>
+</html>
